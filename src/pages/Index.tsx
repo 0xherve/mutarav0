@@ -1,11 +1,26 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import Navbar from "../components/layout/Navbar";
+import Sidebar from "../components/layout/Sidebar";
+import DashboardOverview from "../components/dashboard/DashboardOverview";
 
 const Index = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+  
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="flex min-h-screen bg-background">
+      <AnimatePresence>
+        <Sidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      </AnimatePresence>
+      
+      <div className="flex-1 flex flex-col ml-[70px] lg:ml-[240px]">
+        <Navbar toggleSidebar={toggleSidebar} />
+        <DashboardOverview />
       </div>
     </div>
   );
