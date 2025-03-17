@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
@@ -77,7 +76,6 @@ const Sidebar = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (open: boo
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     
-    // This would actually change the theme in a real implementation
     console.log("Theme changed to:", newTheme);
   };
   
@@ -85,7 +83,7 @@ const Sidebar = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (open: boo
     { to: "/", icon: Home, label: "Dashboard" },
     { to: "/livestock", icon: ClipboardList, label: "Livestock" },
     { to: "/health", icon: Heart, label: "Health" },
-    { to: "/breeding", icon: Timer, label: "Breeding" },
+    { to: "/tasks", icon: Timer, label: "Tasks" },
     { to: "/feeding", icon: Wheat, label: "Feeding" },
     { to: "/finances", icon: CreditCard, label: "Finances" },
     { to: "/analytics", icon: PieChart, label: "Analytics" },
@@ -93,7 +91,6 @@ const Sidebar = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (open: boo
 
   return (
     <>
-      {/* Mobile overlay */}
       {isMobile && isOpen && (
         <div 
           className="fixed inset-0 bg-black/40 z-30 lg:hidden"
