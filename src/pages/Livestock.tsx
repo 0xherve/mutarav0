@@ -17,7 +17,7 @@ import {
 import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
 import PageHeader from "../components/common/PageHeader";
-import LivestockGrid from "../components/livestock/LivestockGrid";
+import LivestockView from "../components/livestock/LivestockView";
 
 const Livestock = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -92,7 +92,7 @@ const Livestock = () => {
             </div>
           </div>
           
-          <LivestockGrid />
+          <LivestockView />
         </main>
       </div>
     </div>
