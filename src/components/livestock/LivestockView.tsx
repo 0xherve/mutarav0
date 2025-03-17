@@ -3,11 +3,12 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import LivestockGrid from "./LivestockGrid";
 import LivestockTable from "./LivestockTable";
+import LivestockDetailModal from "./LivestockDetailModal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, DownloadCloud, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Mock livestock data
+// Enhanced mock livestock data with additional fields
 const mockLivestock = [
   {
     id: "LV1001",
@@ -17,7 +18,11 @@ const mockLivestock = [
     age: "3 years",
     weight: "550 kg",
     healthStatus: "healthy" as const,
-    imageUrl: "https://images.unsplash.com/photo-1584935496024-506443d6f664?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1584935496024-506443d6f664?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    birthDate: "2021-03-15",
+    purchaseDate: "2021-06-20",
+    purchasePrice: "$1,200",
+    notes: "Excellent milk producer. First calf born in spring 2023."
   },
   {
     id: "LV1002",
@@ -27,7 +32,11 @@ const mockLivestock = [
     age: "4 years",
     weight: "850 kg",
     healthStatus: "healthy" as const,
-    imageUrl: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1573865526739-10659fec78a5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    birthDate: "2020-02-10",
+    purchaseDate: "2020-05-15",
+    purchasePrice: "$1,500",
+    notes: "Primary breeding bull. Excellent genetics."
   },
   {
     id: "LV1003",
@@ -37,7 +46,11 @@ const mockLivestock = [
     age: "2 years",
     weight: "450 kg",
     healthStatus: "attention" as const,
-    imageUrl: "https://images.unsplash.com/photo-1545468258-95573b2a901f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1545468258-95573b2a901f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    birthDate: "2022-05-22",
+    purchaseDate: "2022-08-10",
+    purchasePrice: "$900",
+    notes: "Recently showing signs of reduced appetite. Under observation."
   },
   {
     id: "LV1004",
@@ -47,7 +60,11 @@ const mockLivestock = [
     age: "5 years",
     weight: "920 kg",
     healthStatus: "healthy" as const,
-    imageUrl: "https://images.unsplash.com/photo-1527152440941-d93afd8e1eda?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1527152440941-d93afd8e1eda?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    birthDate: "2019-01-05",
+    purchaseDate: "2019-06-30",
+    purchasePrice: "$1,800",
+    notes: "Secondary breeding bull. Heat-resistant."
   },
   {
     id: "LV1005",
@@ -57,7 +74,11 @@ const mockLivestock = [
     age: "3 years",
     weight: "420 kg",
     healthStatus: "sick" as const,
-    imageUrl: "https://images.unsplash.com/photo-1546445317-29f4545e9d53?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1546445317-29f4545e9d53?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    birthDate: "2021-07-12",
+    purchaseDate: "2021-10-05",
+    purchasePrice: "$950",
+    notes: "Currently on antibiotics for respiratory infection."
   },
   {
     id: "LV1006",
@@ -67,20 +88,27 @@ const mockLivestock = [
     age: "2 years",
     weight: "680 kg",
     healthStatus: "healthy" as const,
-    imageUrl: "https://images.unsplash.com/photo-1511374322434-82c9c47d07da?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+    imageUrl: "https://images.unsplash.com/photo-1511374322434-82c9c47d07da?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+    birthDate: "2022-02-18",
+    purchaseDate: "2022-05-30",
+    purchasePrice: "$1,350",
+    notes: "Fast growing. Potential for beef production."
   }
 ];
 
 const LivestockView = () => {
   const [livestock, setLivestock] = useState(mockLivestock);
   const [view, setView] = useState<"grid" | "table">("grid");
+  const [selectedLivestock, setSelectedLivestock] = useState<typeof mockLivestock[0] | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const { toast } = useToast();
   
   const handleView = (id: string) => {
-    toast({
-      title: "Viewing Livestock",
-      description: `You are viewing details for ${id}`,
-    });
+    const selected = livestock.find(item => item.id === id);
+    if (selected) {
+      setSelectedLivestock(selected);
+      setIsDetailModalOpen(true);
+    }
   };
   
   const handleEdit = (id: string) => {
@@ -168,7 +196,12 @@ const LivestockView = () => {
       </div>
       
       {view === "grid" ? (
-        <LivestockGrid />
+        <LivestockGrid 
+          data={livestock}
+          onView={handleView}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       ) : (
         <LivestockTable 
           data={livestock}
@@ -179,6 +212,13 @@ const LivestockView = () => {
           onPrint={handlePrint}
         />
       )}
+      
+      <LivestockDetailModal 
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        livestock={selectedLivestock}
+        onEdit={handleEdit}
+      />
     </div>
   );
 };

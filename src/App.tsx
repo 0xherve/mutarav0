@@ -9,6 +9,9 @@ import Livestock from "./pages/Livestock";
 import Health from "./pages/Health";
 import Breeding from "./pages/Breeding";
 import Tasks from "./pages/Tasks";
+import Feeding from "./pages/Feeding";
+import Finances from "./pages/Finances";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +28,9 @@ const App = () => (
           <Route path="/health" element={<Health />} />
           <Route path="/breeding" element={<Breeding />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/feeding" element={<Feeding />} />
+          <Route path="/finances" element={<Finances />} />
+          <Route path="/analytics" element={<Analytics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
