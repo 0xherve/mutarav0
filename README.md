@@ -1,69 +1,52 @@
-# Welcome to your Lovable project
 
-## Project info
+# Mutara Farm Management System
 
-**URL**: https://lovable.dev/projects/25e45591-37bd-4fa0-84a1-f4f95037462f
+A comprehensive farm management system built with React, TypeScript, and Supabase.
 
-## How can I edit this code?
+## Setting Up Supabase
 
-There are several ways of editing your application.
+1. Create a new Supabase project at [https://supabase.com](https://supabase.com)
+2. Once your project is created, go to the SQL Editor in the Supabase dashboard
+3. Copy the contents of `src/db/schema.sql` and paste it into the SQL Editor
+4. Run the SQL script to create all necessary tables and populate them with sample data
+5. Get your Supabase URL and anon key from the API settings page
+6. Create a `.env.local` file in the root directory with the following variables:
+   ```
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
 
-**Use Lovable**
+## Setting Up Row Level Security (RLS)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/25e45591-37bd-4fa0-84a1-f4f95037462f) and start prompting.
+The SQL script includes Row Level Security policies that:
+- Allow authenticated users to read all data
+- Allow authenticated users to insert, update, and delete their own data
 
-Changes made via Lovable will be committed automatically to this repo.
+If you need more sophisticated policies, you can modify them in the Supabase dashboard.
 
-**Use your preferred IDE**
+## Database Schema
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+The application uses the following tables:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- `livestock`: Stores information about each animal
+- `health_records`: Medical records for livestock
+- `vaccination_schedules`: Upcoming vaccination appointments
+- `feeding_schedules`: Feeding routines
+- `feed_inventory`: Available feed supplies
+- `tasks`: Farm tasks and to-dos
+- `financial_transactions`: Income and expenses
 
-Follow these steps:
+## Development
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+1. Install dependencies: `npm install`
+2. Start the development server: `npm run dev`
+3. Access the application at `http://localhost:5173`
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Authentication
 
-# Step 3: Install the necessary dependencies.
-npm i
+The application uses Supabase Authentication. Users can:
+- Register with email and password
+- Log in with email and password
+- Reset password
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with .
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/25e45591-37bd-4fa0-84a1-f4f95037462f) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+To access the application, users must be authenticated.
