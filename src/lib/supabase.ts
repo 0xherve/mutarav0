@@ -138,7 +138,7 @@ export const toggleTaskCompletion = async (id: string, completed: boolean) => {
 };
 
 export const addTask = async (task: Database['public']['Tables']['tasks']['Insert']) => {
-  // Ensure the task has an ID
+  // Ensure the task has an ID if not provided
   const taskWithId = {
     ...task,
     id: task.id || uuidv4(),

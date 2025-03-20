@@ -226,6 +226,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assignee: string | null
           category: string
           completed: boolean
           created_at: string | null
@@ -237,6 +238,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          assignee?: string | null
           category: string
           completed?: boolean
           created_at?: string | null
@@ -248,6 +250,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          assignee?: string | null
           category?: string
           completed?: boolean
           created_at?: string | null

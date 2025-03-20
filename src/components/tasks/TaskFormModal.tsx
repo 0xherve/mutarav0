@@ -42,6 +42,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 import { addTask, updateTask } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 
@@ -81,10 +82,12 @@ export function TaskFormModal({
 }: TaskFormModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Format the due_date from string to Date if it exists
+  // Format the due_date from string to Date if it exists and cast category/priority to allowed types
   const formattedDefaultValues = defaultValues ? {
     ...defaultValues,
     due_date: defaultValues.due_date ? new Date(defaultValues.due_date) : undefined,
+    category: defaultValues.category as "feeding" | "health" | "breeding" | "general",
+    priority: defaultValues.priority as "low" | "medium" | "high",
   } : undefined;
 
   const form = useForm<TaskFormValues>({
@@ -111,8 +114,10 @@ export function TaskFormModal({
           due_date: formattedDate,
         });
       } else {
+        // Generate a new ID for the task if it's a new task
         await addTask({
           ...data,
+          id: uuidv4(),
           due_date: formattedDate,
           completed: false,
         });
