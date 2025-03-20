@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon, Check, Clock, Plus, Tag, Trash } from "lucide-react";
 import { format } from "date-fns";
@@ -10,10 +10,16 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "../components/layout/Navbar";
 import Sidebar from "../components/layout/Sidebar";
 import PageHeader from "../components/common/PageHeader";
 import CustomCard from "../components/ui/CustomCard";
+import { Checkbox } from "@/components/ui/checkbox";
+import { fetchTasks, toggleTaskCompletion, deleteTask } from "@/lib/supabase";
+import type { Database } from "@/integrations/supabase/types";
+
+type Task = Database['public']['Tables']['tasks']['Row'];
 
 const taskCategories = {
   "feeding": { name: "Feeding", color: "bg-amber-100 text-amber-800 border-amber-200" },
@@ -22,54 +28,6 @@ const taskCategories = {
   "general": { name: "General", color: "bg-blue-100 text-blue-800 border-blue-200" }
 };
 
-const mockTasks = [
-  {
-    id: "T001",
-    title: "Feed new calves",
-    description: "Special nutrition mix for the new calves",
-    category: "feeding",
-    dueDate: "2023-11-15",
-    completed: false,
-    priority: "high"
-  },
-  {
-    id: "T002",
-    title: "Vaccination for herd",
-    description: "Annual vaccination for the entire herd",
-    category: "health",
-    dueDate: "2023-11-20",
-    completed: false,
-    priority: "high"
-  },
-  {
-    id: "T003",
-    title: "Monitor heat cycles",
-    description: "Check for signs of heat in breeding stock",
-    category: "breeding",
-    dueDate: "2023-11-10",
-    completed: false,
-    priority: "medium"
-  },
-  {
-    id: "T004",
-    title: "Repair north fence",
-    description: "Fix the damaged section of the north pasture fence",
-    category: "general",
-    dueDate: "2023-11-25",
-    completed: false,
-    priority: "medium"
-  },
-  {
-    id: "T005",
-    title: "Schedule vet visit",
-    description: "Routine checkup for pregnant cows",
-    category: "health",
-    dueDate: "2023-11-18",
-    completed: true,
-    priority: "high"
-  }
-];
-
 const priorityColors = {
   high: "bg-red-50 text-red-700 border-red-100",
   medium: "bg-amber-50 text-amber-700 border-amber-100",
@@ -77,13 +35,13 @@ const priorityColors = {
 };
 
 interface TaskCardProps {
-  task: typeof mockTasks[0];
-  onToggleComplete: (id: string) => void;
+  task: Task;
+  onToggleComplete: (id: string, completed: boolean) => void;
   onDelete: (id: string) => void;
 }
 
 const TaskCard = ({ task, onToggleComplete, onDelete }: TaskCardProps) => {
-  const isPastDue = new Date(task.dueDate) < new Date() && !task.completed;
+  const isPastDue = new Date(task.due_date) < new Date() && !task.completed;
   const categoryInfo = taskCategories[task.category as keyof typeof taskCategories];
   
   return (
@@ -96,17 +54,16 @@ const TaskCard = ({ task, onToggleComplete, onDelete }: TaskCardProps) => {
       <div className="p-6">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
-            <Button 
-              variant="outline" 
-              size="icon" 
+            <Checkbox 
+              checked={task.completed}
+              onCheckedChange={(checked) => {
+                onToggleComplete(task.id, checked as boolean);
+              }}
               className={cn(
-                "h-6 w-6 rounded-full",
+                "mt-1",
                 task.completed && "bg-green-100 border-green-200"
               )} 
-              onClick={() => onToggleComplete(task.id)}
-            >
-              {task.completed && <Check className="h-3 w-3 text-green-600" />}
-            </Button>
+            />
             
             <div>
               <h3 className={cn(
@@ -151,7 +108,7 @@ const TaskCard = ({ task, onToggleComplete, onDelete }: TaskCardProps) => {
         <div className="flex justify-end pt-3 mt-4 border-t">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
-            <span>Due: {new Date(task.dueDate).toLocaleDateString()}</span>
+            <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
           </div>
         </div>
       </div>
@@ -161,22 +118,75 @@ const TaskCard = ({ task, onToggleComplete, onDelete }: TaskCardProps) => {
 
 const Tasks = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [tasks, setTasks] = useState(mockTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [date, setDate] = useState<Date>();
   const [filter, setFilter] = useState("all");
+  const { toast } = useToast();
   
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
+
+  useEffect(() => {
+    const loadTasks = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchTasks();
+        setTasks(data);
+      } catch (error) {
+        console.error("Error loading tasks:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load tasks. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTasks();
+  }, [toast]);
   
-  const handleToggleComplete = (id: string) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+  const handleToggleComplete = async (id: string, completed: boolean) => {
+    try {
+      await toggleTaskCompletion(id, completed);
+      setTasks(tasks.map(task => 
+        task.id === id ? { ...task, completed } : task
+      ));
+      
+      toast({
+        title: completed ? "Task completed" : "Task marked as pending",
+        description: completed ? "The task has been marked as completed." : "The task has been marked as pending.",
+      });
+    } catch (error) {
+      console.error("Error toggling task completion:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update task status. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id));
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await deleteTask(id);
+      setTasks(tasks.filter(task => task.id !== id));
+      
+      toast({
+        title: "Task deleted",
+        description: "The task has been successfully deleted.",
+      });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete task. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
   
   const filteredTasks = tasks.filter(task => {
@@ -257,26 +267,32 @@ const Tasks = () => {
                 </Popover>
               </div>
               
-              <div className="space-y-4">
-                {filteredTasks.length > 0 ? (
-                  filteredTasks.map(task => (
-                    <TaskCard 
-                      key={task.id} 
-                      task={task} 
-                      onToggleComplete={handleToggleComplete}
-                      onDelete={handleDeleteTask}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">No tasks found</p>
-                    <Button size="sm" className="mt-4">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add Task
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Loading tasks...</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredTasks.length > 0 ? (
+                    filteredTasks.map(task => (
+                      <TaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onToggleComplete={handleToggleComplete}
+                        onDelete={handleDeleteTask}
+                      />
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">No tasks found</p>
+                      <Button size="sm" className="mt-4">
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Task
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
             <div className="w-full md:w-80 lg:w-96 order-1 md:order-2">
@@ -309,12 +325,12 @@ const Tasks = () => {
                   <div 
                     className="h-full bg-farm-primary rounded-full"
                     style={{ 
-                      width: `${(tasks.filter(t => t.completed).length / tasks.length) * 100}%` 
+                      width: `${tasks.length ? (tasks.filter(t => t.completed).length / tasks.length) * 100 : 0}%` 
                     }}
                   ></div>
                 </div>
                 <p className="text-xs text-muted-foreground text-center mt-2">
-                  {Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100)}% completed
+                  {tasks.length ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100) : 0}% completed
                 </p>
               </CustomCard>
             </div>

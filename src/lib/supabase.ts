@@ -2,6 +2,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { v4 as uuidv4 } from 'uuid';
 
 // Database tables
 export const TABLES = {
@@ -108,6 +109,53 @@ export const deleteLivestock = async (id: string) => {
     .eq('id', id);
   if (error) {
     console.error('Error deleting livestock:', error);
+    throw error;
+  }
+  return true;
+};
+
+// Task functions
+export const toggleTaskCompletion = async (id: string, completed: boolean) => {
+  const { data, error } = await supabase
+    .from(TABLES.TASKS)
+    .update({ completed })
+    .eq('id', id)
+    .select();
+  
+  if (error) {
+    console.error('Error toggling task completion:', error);
+    throw error;
+  }
+  return data[0];
+};
+
+export const addTask = async (task: Database['public']['Tables']['tasks']['Insert']) => {
+  // Ensure the task has an ID
+  const taskWithId = {
+    ...task,
+    id: task.id || uuidv4(),
+  };
+  
+  const { data, error } = await supabase
+    .from(TABLES.TASKS)
+    .insert([taskWithId])
+    .select();
+  
+  if (error) {
+    console.error('Error adding task:', error);
+    throw error;
+  }
+  return data[0];
+};
+
+export const deleteTask = async (id: string) => {
+  const { error } = await supabase
+    .from(TABLES.TASKS)
+    .delete()
+    .eq('id', id);
+  
+  if (error) {
+    console.error('Error deleting task:', error);
     throw error;
   }
   return true;
