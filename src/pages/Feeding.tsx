@@ -86,8 +86,8 @@ const Feeding = () => {
   // Filter data based on search query
   const filteredSchedules = feedingSchedules?.filter(schedule => 
     schedule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    schedule.feedType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    schedule.animalGroup.toLowerCase().includes(searchQuery.toLowerCase())
+    schedule.feed_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    schedule.animal_group.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
   
   const filteredInventory = feedInventory?.filter(item => 
@@ -179,7 +179,7 @@ const Feeding = () => {
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-semibold text-lg">{schedule.name}</h3>
-                            <p className="text-muted-foreground text-sm mt-1">{schedule.feedType}</p>
+                            <p className="text-muted-foreground text-sm mt-1">{schedule.feed_type}</p>
                           </div>
                           <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                             schedule.status === "active" 
@@ -193,7 +193,7 @@ const Feeding = () => {
                         <div className="grid grid-cols-2 gap-4 mt-4">
                           <div>
                             <p className="text-xs text-muted-foreground">Animal Group</p>
-                            <p className="font-medium">{schedule.animalGroup}</p>
+                            <p className="font-medium">{schedule.animal_group}</p>
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Quantity</p>
@@ -254,8 +254,8 @@ const Feeding = () => {
                         <tr key={feed.id} className="border-b hover:bg-muted/30">
                           <td className="py-3 px-4">{feed.name}</td>
                           <td className="py-3 px-4">{feed.category}</td>
-                          <td className="py-3 px-4">{feed.quantityAvailable}</td>
-                          <td className="py-3 px-4">{new Date(feed.lastPurchase).toLocaleDateString()}</td>
+                          <td className="py-3 px-4">{feed.quantity_available}</td>
+                          <td className="py-3 px-4">{new Date(feed.last_purchase).toLocaleDateString()}</td>
                           <td className="py-3 px-4">{feed.cost}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
