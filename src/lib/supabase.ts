@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 // Database tables
 export const TABLES = {
@@ -15,7 +16,7 @@ export const TABLES = {
 
 // Helper functions for common database operations
 export const fetchLivestock = async () => {
-  const { data, error } = await supabase.from('livestock').select('*');
+  const { data, error } = await supabase.from(TABLES.LIVESTOCK).select('*');
   if (error) {
     console.error('Error fetching livestock:', error);
     throw error;
@@ -24,7 +25,7 @@ export const fetchLivestock = async () => {
 };
 
 export const fetchHealthRecords = async () => {
-  const { data, error } = await supabase.from('health_records').select('*');
+  const { data, error } = await supabase.from(TABLES.HEALTH_RECORDS).select('*');
   if (error) {
     console.error('Error fetching health records:', error);
     throw error;
@@ -33,7 +34,7 @@ export const fetchHealthRecords = async () => {
 };
 
 export const fetchVaccinationSchedules = async () => {
-  const { data, error } = await supabase.from('vaccination_schedules').select('*');
+  const { data, error } = await supabase.from(TABLES.VACCINATION_SCHEDULES).select('*');
   if (error) {
     console.error('Error fetching vaccination schedules:', error);
     throw error;
@@ -42,7 +43,7 @@ export const fetchVaccinationSchedules = async () => {
 };
 
 export const fetchFeedingSchedules = async () => {
-  const { data, error } = await supabase.from('feeding_schedules').select('*');
+  const { data, error } = await supabase.from(TABLES.FEEDING_SCHEDULES).select('*');
   if (error) {
     console.error('Error fetching feeding schedules:', error);
     throw error;
@@ -51,7 +52,7 @@ export const fetchFeedingSchedules = async () => {
 };
 
 export const fetchFeedInventory = async () => {
-  const { data, error } = await supabase.from('feed_inventory').select('*');
+  const { data, error } = await supabase.from(TABLES.FEED_INVENTORY).select('*');
   if (error) {
     console.error('Error fetching feed inventory:', error);
     throw error;
@@ -60,7 +61,7 @@ export const fetchFeedInventory = async () => {
 };
 
 export const fetchTasks = async () => {
-  const { data, error } = await supabase.from('tasks').select('*');
+  const { data, error } = await supabase.from(TABLES.TASKS).select('*');
   if (error) {
     console.error('Error fetching tasks:', error);
     throw error;
@@ -69,7 +70,7 @@ export const fetchTasks = async () => {
 };
 
 export const fetchFinancialTransactions = async () => {
-  const { data, error } = await supabase.from('financial_transactions').select('*');
+  const { data, error } = await supabase.from(TABLES.FINANCIAL_TRANSACTIONS).select('*');
   if (error) {
     console.error('Error fetching financial transactions:', error);
     throw error;
@@ -79,7 +80,7 @@ export const fetchFinancialTransactions = async () => {
 
 // Functions for specific database operations
 export const addLivestock = async (livestock: any) => {
-  const { data, error } = await supabase.from('livestock').insert([livestock]).select();
+  const { data, error } = await supabase.from(TABLES.LIVESTOCK).insert([livestock]).select();
   if (error) {
     console.error('Error adding livestock:', error);
     throw error;
@@ -89,7 +90,7 @@ export const addLivestock = async (livestock: any) => {
 
 export const updateLivestock = async (id: string, updates: any) => {
   const { data, error } = await supabase
-    .from('livestock')
+    .from(TABLES.LIVESTOCK)
     .update(updates)
     .eq('id', id)
     .select();
@@ -102,11 +103,36 @@ export const updateLivestock = async (id: string, updates: any) => {
 
 export const deleteLivestock = async (id: string) => {
   const { error } = await supabase
-    .from('livestock')
+    .from(TABLES.LIVESTOCK)
     .delete()
     .eq('id', id);
   if (error) {
     console.error('Error deleting livestock:', error);
+    throw error;
+  }
+  return true;
+};
+
+// Financial transactions functions
+export const addFinancialTransaction = async (transaction: Database['public']['Tables']['financial_transactions']['Insert']) => {
+  const { data, error } = await supabase
+    .from(TABLES.FINANCIAL_TRANSACTIONS)
+    .insert([transaction])
+    .select();
+  if (error) {
+    console.error('Error adding financial transaction:', error);
+    throw error;
+  }
+  return data[0];
+};
+
+export const deleteFinancialTransaction = async (id: string) => {
+  const { error } = await supabase
+    .from(TABLES.FINANCIAL_TRANSACTIONS)
+    .delete()
+    .eq('id', id);
+  if (error) {
+    console.error('Error deleting financial transaction:', error);
     throw error;
   }
   return true;

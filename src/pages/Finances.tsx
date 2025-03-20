@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Filter, DollarSign, BarChart, PieChart, TrendingUp, Download } from "lucide-react";
@@ -17,103 +17,20 @@ import CustomCard from "../components/ui/CustomCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { fetchFinancialTransactions } from "@/lib/supabase";
+import AddTransactionModal from "@/components/finances/AddTransactionModal";
+import type { Database } from '@/integrations/supabase/types';
 
-// Mock financial data
-const mockTransactions = [
-  {
-    id: "T001",
-    date: "2023-11-05",
-    description: "Feed Purchase - Premium Feed Co.",
-    category: "Feed",
-    amount: -1250.00,
-    paymentMethod: "Bank Transfer",
-    status: "completed"
-  },
-  {
-    id: "T002",
-    date: "2023-11-10",
-    description: "Milk Sales - Valley Dairy Processor",
-    category: "Sales",
-    amount: 3200.00,
-    paymentMethod: "Check",
-    status: "completed"
-  },
-  {
-    id: "T003",
-    date: "2023-11-15",
-    description: "Veterinary Services - Dr. Johnson",
-    category: "Medical",
-    amount: -450.00,
-    paymentMethod: "Credit Card",
-    status: "completed"
-  },
-  {
-    id: "T004",
-    date: "2023-11-20",
-    description: "Cattle Sale - 2 Heads",
-    category: "Sales",
-    amount: 2800.00,
-    paymentMethod: "Bank Transfer",
-    status: "completed"
-  },
-  {
-    id: "T005",
-    date: "2023-11-25",
-    description: "Equipment Maintenance",
-    category: "Equipment",
-    amount: -350.00,
-    paymentMethod: "Credit Card",
-    status: "completed"
-  },
-  {
-    id: "T006",
-    date: "2023-11-28",
-    description: "Farm Insurance Payment",
-    category: "Insurance",
-    amount: -520.00,
-    paymentMethod: "Direct Debit",
-    status: "completed"
-  },
-  {
-    id: "T007",
-    date: "2023-12-01",
-    description: "Staff Wages",
-    category: "Labor",
-    amount: -1800.00,
-    paymentMethod: "Bank Transfer",
-    status: "pending"
-  }
-];
-
-// Mock chart data
-const monthlyData = [
-  { name: 'Jan', income: 4000, expenses: 2400 },
-  { name: 'Feb', income: 3000, expenses: 1398 },
-  { name: 'Mar', income: 2000, expenses: 3800 },
-  { name: 'Apr', income: 2780, expenses: 3908 },
-  { name: 'May', income: 1890, expenses: 4800 },
-  { name: 'Jun', income: 2390, expenses: 3800 },
-  { name: 'Jul', income: 3490, expenses: 4300 },
-  { name: 'Aug', income: 4000, expenses: 2400 },
-  { name: 'Sep', income: 3000, expenses: 1398 },
-  { name: 'Oct', income: 2000, expenses: 9800 },
-  { name: 'Nov', income: 2780, expenses: 3908 },
-  { name: 'Dec', income: 1890, expenses: 4800 }
-];
-
-// Financial summary data
-const financialSummary = {
-  totalIncome: 6000.00,
-  totalExpenses: 4370.00,
-  netProfit: 1630.00,
-  pendingIncome: 0,
-  pendingExpenses: 1800.00
-};
+// Define the transaction type from the database
+type Transaction = Database['public']['Tables']['financial_transactions']['Row'];
 
 const Finances = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("transactions");
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { toast } = useToast();
   
   const toggleSidebar = () => {
@@ -121,10 +38,7 @@ const Finances = () => {
   };
   
   const handleAddTransaction = () => {
-    toast({
-      title: "Add Transaction",
-      description: "This feature will be implemented soon.",
-    });
+    setIsAddModalOpen(true);
   };
   
   const handleExportData = () => {
@@ -132,7 +46,81 @@ const Finances = () => {
       title: "Export Financial Data",
       description: "Exporting data to CSV/Excel.",
     });
+    // For now just download the transactions as a JSON file
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(transactions, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "financial_transactions.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
   };
+
+  const loadTransactions = async () => {
+    setIsLoading(true);
+    try {
+      const data = await fetchFinancialTransactions();
+      setTransactions(data);
+    } catch (error) {
+      console.error("Error loading transactions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load financial transactions.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTransactions();
+  }, []);
+
+  // Calculate financial summary from actual transactions
+  const financialSummary = transactions.reduce((summary, transaction) => {
+    const amount = transaction.amount;
+    if (amount > 0) {
+      summary.totalIncome += amount;
+      if (transaction.status === 'pending') {
+        summary.pendingIncome += amount;
+      }
+    } else {
+      summary.totalExpenses += Math.abs(amount);
+      if (transaction.status === 'pending') {
+        summary.pendingExpenses += Math.abs(amount);
+      }
+    }
+    summary.netProfit = summary.totalIncome - summary.totalExpenses;
+    return summary;
+  }, {
+    totalIncome: 0,
+    totalExpenses: 0,
+    netProfit: 0,
+    pendingIncome: 0,
+    pendingExpenses: 0
+  });
+
+  // Process transactions for monthly chart data
+  const getMonthlyChartData = () => {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData = months.map(month => ({ name: month, income: 0, expenses: 0 }));
+    
+    transactions.forEach(transaction => {
+      const date = new Date(transaction.date);
+      const month = date.getMonth(); // 0-11
+      
+      if (transaction.amount > 0) {
+        monthlyData[month].income += transaction.amount;
+      } else {
+        monthlyData[month].expenses += Math.abs(transaction.amount);
+      }
+    });
+    
+    return monthlyData;
+  };
+
+  const monthlyData = getMonthlyChartData();
   
   return (
     <div className="flex min-h-screen bg-background">
@@ -269,26 +257,45 @@ const Finances = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {mockTransactions.map((transaction) => (
-                      <tr key={transaction.id} className="border-b hover:bg-muted/30">
-                        <td className="py-3 px-4">{new Date(transaction.date).toLocaleDateString()}</td>
-                        <td className="py-3 px-4">{transaction.description}</td>
-                        <td className="py-3 px-4">{transaction.category}</td>
-                        <td className="py-3 px-4">{transaction.paymentMethod}</td>
-                        <td className={`py-3 px-4 text-right font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {transaction.amount < 0 ? '-' : ''}${Math.abs(transaction.amount).toFixed(2)}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            transaction.status === "completed" 
-                              ? "bg-green-100 text-green-800" 
-                              : "bg-yellow-100 text-yellow-800"
-                          }`}>
-                            {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                          </span>
-                        </td>
+                    {isLoading ? (
+                      <tr>
+                        <td colSpan={6} className="py-4 text-center">Loading transactions...</td>
                       </tr>
-                    ))}
+                    ) : transactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-4 text-center">No transactions found. Add your first transaction!</td>
+                      </tr>
+                    ) : (
+                      transactions
+                        .filter(transaction => {
+                          if (!searchQuery) return true;
+                          return (
+                            transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            transaction.category.toLowerCase().includes(searchQuery.toLowerCase())
+                          );
+                        })
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((transaction) => (
+                          <tr key={transaction.id} className="border-b hover:bg-muted/30">
+                            <td className="py-3 px-4">{new Date(transaction.date).toLocaleDateString()}</td>
+                            <td className="py-3 px-4">{transaction.description}</td>
+                            <td className="py-3 px-4">{transaction.category}</td>
+                            <td className="py-3 px-4">{transaction.payment_method || '-'}</td>
+                            <td className={`py-3 px-4 text-right font-medium ${transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              {transaction.amount < 0 ? '-' : ''}${Math.abs(transaction.amount).toFixed(2)}
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                transaction.status === "completed" 
+                                  ? "bg-green-100 text-green-800" 
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}>
+                                {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -341,6 +348,12 @@ const Finances = () => {
           </Tabs>
         </main>
       </div>
+      
+      <AddTransactionModal 
+        isOpen={isAddModalOpen} 
+        onClose={() => setIsAddModalOpen(false)} 
+        onSuccess={loadTransactions}
+      />
     </div>
   );
 };
