@@ -61,8 +61,16 @@ export const fetchFeedInventory = async () => {
   return data;
 };
 
-export const fetchTasks = async () => {
-  const { data, error } = await supabase.from(TABLES.TASKS).select('*');
+export const fetchTasks = async (dateFilter?: Date) => {
+  let query = supabase.from(TABLES.TASKS).select('*');
+  
+  if (dateFilter) {
+    const formattedDate = dateFilter.toISOString().split('T')[0];
+    query = query.eq('due_date', formattedDate);
+  }
+  
+  const { data, error } = await query;
+  
   if (error) {
     console.error('Error fetching tasks:', error);
     throw error;
@@ -143,6 +151,20 @@ export const addTask = async (task: Database['public']['Tables']['tasks']['Inser
   
   if (error) {
     console.error('Error adding task:', error);
+    throw error;
+  }
+  return data[0];
+};
+
+export const updateTask = async (id: string, updates: Partial<Database['public']['Tables']['tasks']['Update']>) => {
+  const { data, error } = await supabase
+    .from(TABLES.TASKS)
+    .update(updates)
+    .eq('id', id)
+    .select();
+  
+  if (error) {
+    console.error('Error updating task:', error);
     throw error;
   }
   return data[0];
