@@ -18,6 +18,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { fetchFeedingSchedules, fetchFeedInventory } from "../lib/supabase";
 import { useQuery } from "@tanstack/react-query";
+import { Database } from "@/integrations/supabase/types";
+
+// Define types based on Supabase database
+type FeedingSchedule = Database['public']['Tables']['feeding_schedules']['Row'];
+type FeedInventory = Database['public']['Tables']['feed_inventory']['Row'];
 
 const Feeding = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -83,7 +88,7 @@ const Feeding = () => {
     });
   };
   
-  // Filter data based on search query
+  // Filter data based on search query with proper type checking
   const filteredSchedules = feedingSchedules?.filter(schedule => 
     schedule.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     schedule.feed_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -255,7 +260,7 @@ const Feeding = () => {
                           <td className="py-3 px-4">{feed.name}</td>
                           <td className="py-3 px-4">{feed.category}</td>
                           <td className="py-3 px-4">{feed.quantity_available}</td>
-                          <td className="py-3 px-4">{new Date(feed.last_purchase).toLocaleDateString()}</td>
+                          <td className="py-3 px-4">{feed.last_purchase ? new Date(feed.last_purchase).toLocaleDateString() : 'N/A'}</td>
                           <td className="py-3 px-4">{feed.cost}</td>
                           <td className="py-3 px-4">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${

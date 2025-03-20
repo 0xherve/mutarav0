@@ -11,11 +11,11 @@ export const TABLES = {
   FEED_INVENTORY: 'feed_inventory',
   TASKS: 'tasks',
   FINANCIAL_TRANSACTIONS: 'financial_transactions',
-};
+} as const;
 
 // Helper functions for common database operations
 export const fetchLivestock = async () => {
-  const { data, error } = await supabase.from(TABLES.LIVESTOCK).select('*');
+  const { data, error } = await supabase.from('livestock').select('*');
   if (error) {
     console.error('Error fetching livestock:', error);
     throw error;
@@ -24,7 +24,7 @@ export const fetchLivestock = async () => {
 };
 
 export const fetchHealthRecords = async () => {
-  const { data, error } = await supabase.from(TABLES.HEALTH_RECORDS).select('*');
+  const { data, error } = await supabase.from('health_records').select('*');
   if (error) {
     console.error('Error fetching health records:', error);
     throw error;
@@ -33,7 +33,7 @@ export const fetchHealthRecords = async () => {
 };
 
 export const fetchVaccinationSchedules = async () => {
-  const { data, error } = await supabase.from(TABLES.VACCINATION_SCHEDULES).select('*');
+  const { data, error } = await supabase.from('vaccination_schedules').select('*');
   if (error) {
     console.error('Error fetching vaccination schedules:', error);
     throw error;
@@ -42,7 +42,7 @@ export const fetchVaccinationSchedules = async () => {
 };
 
 export const fetchFeedingSchedules = async () => {
-  const { data, error } = await supabase.from(TABLES.FEEDING_SCHEDULES).select('*');
+  const { data, error } = await supabase.from('feeding_schedules').select('*');
   if (error) {
     console.error('Error fetching feeding schedules:', error);
     throw error;
@@ -51,7 +51,7 @@ export const fetchFeedingSchedules = async () => {
 };
 
 export const fetchFeedInventory = async () => {
-  const { data, error } = await supabase.from(TABLES.FEED_INVENTORY).select('*');
+  const { data, error } = await supabase.from('feed_inventory').select('*');
   if (error) {
     console.error('Error fetching feed inventory:', error);
     throw error;
@@ -60,7 +60,7 @@ export const fetchFeedInventory = async () => {
 };
 
 export const fetchTasks = async () => {
-  const { data, error } = await supabase.from(TABLES.TASKS).select('*');
+  const { data, error } = await supabase.from('tasks').select('*');
   if (error) {
     console.error('Error fetching tasks:', error);
     throw error;
@@ -69,7 +69,7 @@ export const fetchTasks = async () => {
 };
 
 export const fetchFinancialTransactions = async () => {
-  const { data, error } = await supabase.from(TABLES.FINANCIAL_TRANSACTIONS).select('*');
+  const { data, error } = await supabase.from('financial_transactions').select('*');
   if (error) {
     console.error('Error fetching financial transactions:', error);
     throw error;
@@ -79,7 +79,7 @@ export const fetchFinancialTransactions = async () => {
 
 // Functions for specific database operations
 export const addLivestock = async (livestock: any) => {
-  const { data, error } = await supabase.from(TABLES.LIVESTOCK).insert([livestock]).select();
+  const { data, error } = await supabase.from('livestock').insert([livestock]).select();
   if (error) {
     console.error('Error adding livestock:', error);
     throw error;
@@ -89,7 +89,7 @@ export const addLivestock = async (livestock: any) => {
 
 export const updateLivestock = async (id: string, updates: any) => {
   const { data, error } = await supabase
-    .from(TABLES.LIVESTOCK)
+    .from('livestock')
     .update(updates)
     .eq('id', id)
     .select();
@@ -102,7 +102,7 @@ export const updateLivestock = async (id: string, updates: any) => {
 
 export const deleteLivestock = async (id: string) => {
   const { error } = await supabase
-    .from(TABLES.LIVESTOCK)
+    .from('livestock')
     .delete()
     .eq('id', id);
   if (error) {
