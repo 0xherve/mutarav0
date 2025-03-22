@@ -16,9 +16,9 @@ import {
 import CustomCard from "../components/ui/CustomCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { BarChart as RechartsBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { fetchFinancialTransactions } from "@/lib/supabase";
 import AddTransactionModal from "@/components/finances/AddTransactionModal";
+import FinancialAnalytics from "@/components/finances/FinancialAnalytics";
 import type { Database } from '@/integrations/supabase/types';
 
 // Define the transaction type from the database
@@ -100,27 +100,6 @@ const Finances = () => {
     pendingIncome: 0,
     pendingExpenses: 0
   });
-
-  // Process transactions for monthly chart data
-  const getMonthlyChartData = () => {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthlyData = months.map(month => ({ name: month, income: 0, expenses: 0 }));
-    
-    transactions.forEach(transaction => {
-      const date = new Date(transaction.date);
-      const month = date.getMonth(); // 0-11
-      
-      if (transaction.amount > 0) {
-        monthlyData[month].income += transaction.amount;
-      } else {
-        monthlyData[month].expenses += Math.abs(transaction.amount);
-      }
-    });
-    
-    return monthlyData;
-  };
-
-  const monthlyData = getMonthlyChartData();
   
   return (
     <div className="flex min-h-screen bg-background">
@@ -302,48 +281,7 @@ const Finances = () => {
             </TabsContent>
             
             <TabsContent value="reports">
-              <div className="space-y-6 mt-4">
-                <CustomCard className="p-6">
-                  <h3 className="font-semibold mb-4">Monthly Income vs Expenses</h3>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart
-                        data={monthlyData}
-                        margin={{
-                          top: 20,
-                          right: 30,
-                          left: 20,
-                          bottom: 5,
-                        }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="income" fill="#10b981" name="Income" />
-                        <Bar dataKey="expenses" fill="#ef4444" name="Expenses" />
-                      </RechartsBarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CustomCard>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <CustomCard className="p-6">
-                    <h3 className="font-semibold mb-4">Income by Category</h3>
-                    <div className="h-64 flex items-center justify-center">
-                      <p className="text-muted-foreground">Category breakdown will be available soon.</p>
-                    </div>
-                  </CustomCard>
-                  
-                  <CustomCard className="p-6">
-                    <h3 className="font-semibold mb-4">Expense by Category</h3>
-                    <div className="h-64 flex items-center justify-center">
-                      <p className="text-muted-foreground">Category breakdown will be available soon.</p>
-                    </div>
-                  </CustomCard>
-                </div>
-              </div>
+              <FinancialAnalytics />
             </TabsContent>
           </Tabs>
         </main>

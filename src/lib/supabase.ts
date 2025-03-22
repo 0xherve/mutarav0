@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -81,6 +82,34 @@ export const fetchFinancialTransactions = async () => {
   const { data, error } = await supabase.from(TABLES.FINANCIAL_TRANSACTIONS).select('*');
   if (error) {
     console.error('Error fetching financial transactions:', error);
+    throw error;
+  }
+  return data;
+};
+
+// Functions for filtering financial transactions
+export const fetchTransactionsByDate = async (startDate: string, endDate: string) => {
+  const { data, error } = await supabase
+    .from(TABLES.FINANCIAL_TRANSACTIONS)
+    .select('*')
+    .gte('date', startDate)
+    .lte('date', endDate);
+  
+  if (error) {
+    console.error('Error fetching transactions by date range:', error);
+    throw error;
+  }
+  return data;
+};
+
+export const fetchTransactionsByCategory = async (category: string) => {
+  const { data, error } = await supabase
+    .from(TABLES.FINANCIAL_TRANSACTIONS)
+    .select('*')
+    .eq('category', category);
+  
+  if (error) {
+    console.error('Error fetching transactions by category:', error);
     throw error;
   }
   return data;
@@ -183,12 +212,32 @@ export const deleteTask = async (id: string) => {
 
 // Financial transactions functions
 export const addFinancialTransaction = async (transaction: Database['public']['Tables']['financial_transactions']['Insert']) => {
+  // Validate required fields
+  if (!transaction.id || !transaction.description || !transaction.amount === undefined || !transaction.category || !transaction.date || !transaction.status) {
+    throw new Error('Missing required transaction fields');
+  }
+  
   const { data, error } = await supabase
     .from(TABLES.FINANCIAL_TRANSACTIONS)
     .insert([transaction])
     .select();
+    
   if (error) {
     console.error('Error adding financial transaction:', error);
+    throw error;
+  }
+  return data[0];
+};
+
+export const updateFinancialTransaction = async (id: string, updates: Partial<Database['public']['Tables']['financial_transactions']['Update']>) => {
+  const { data, error } = await supabase
+    .from(TABLES.FINANCIAL_TRANSACTIONS)
+    .update(updates)
+    .eq('id', id)
+    .select();
+    
+  if (error) {
+    console.error('Error updating financial transaction:', error);
     throw error;
   }
   return data[0];
@@ -199,11 +248,10 @@ export const deleteFinancialTransaction = async (id: string) => {
     .from(TABLES.FINANCIAL_TRANSACTIONS)
     .delete()
     .eq('id', id);
+    
   if (error) {
     console.error('Error deleting financial transaction:', error);
     throw error;
   }
   return true;
 };
-
-// Add similar functions for other tables as needed
