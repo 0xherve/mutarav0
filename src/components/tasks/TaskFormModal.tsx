@@ -115,11 +115,16 @@ export function TaskFormModal({
         });
       } else {
         // Generate a new ID for the task if it's a new task
+        // Ensure all required fields have values
         await addTask({
-          ...data,
           id: uuidv4(),
+          title: data.title,
+          description: data.description || "",
+          category: data.category,
+          priority: data.priority,
           due_date: formattedDate,
           completed: false,
+          assignee: data.assignee || null,
         });
       }
       
