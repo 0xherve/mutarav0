@@ -120,6 +120,20 @@ const FinancialAnalytics = () => {
   const incomeByCategory = getCategoryChartData('income');
   const expensesByCategory = getCategoryChartData('expense');
 
+  // Helper function to format currency values safely
+  const formatCurrency = (value: any): string => {
+    // Check if value is a number or can be converted to a number
+    const numValue = typeof value === 'number' ? value : Number(value);
+    
+    // If it's a valid number, format it with 2 decimal places
+    if (!isNaN(numValue)) {
+      return `$${numValue.toFixed(2)}`;
+    }
+    
+    // Return a default string for non-numeric values
+    return '$0.00';
+  };
+
   if (isLoading) {
     return <div className="h-full flex items-center justify-center p-6">Loading financial data...</div>;
   }
@@ -171,7 +185,7 @@ const FinancialAnalytics = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -201,7 +215,7 @@ const FinancialAnalytics = () => {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
+                  <Tooltip formatter={(value) => formatCurrency(value)} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
