@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -254,4 +253,85 @@ export const deleteFinancialTransaction = async (id: string) => {
     throw error;
   }
   return true;
+};
+
+// Function to fetch the recent activities for the dashboard
+export const fetchRecentActivities = async (limit = 5) => {
+  try {
+    // Get recent livestock additions
+    const { data: livestockData, error: livestockError } = await supabase
+      .from(TABLES.LIVESTOCK)
+      .select('id, name, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (livestockError) throw livestockError;
+
+    // Get recent health records
+    const { data: healthData, error: healthError } = await supabase
+      .from(TABLES.HEALTH_RECORDS)
+      .select('id, animal_name, type, date')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (healthError) throw healthError;
+
+    // Get recent tasks
+    const { data: tasksData, error: tasksError } = await supabase
+      .from(TABLES.TASKS)
+      .select('id, title, due_date, priority')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (tasksError) throw tasksError;
+    
+    // Get recent financial transactions
+    const { data: financialData, error: financialError } = await supabase
+      .from(TABLES.FINANCIAL_TRANSACTIONS)
+      .select('id, description, amount, date')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (financialError) throw financialError;
+    
+    // Format all activities into a single array
+    const formattedActivities = [
+      ...livestockData.map(item => ({
+        id: `livestock-${item.id}`,
+        title: `New Livestock Added`,
+        description: `${item.name} was added to your livestock`,
+        time: new Date(item.created_at).toLocaleString(),
+        type: 'add' as const,
+      })),
+      ...healthData.map(item => ({
+        id: `health-${item.id}`,
+        title: `Health Record Added`,
+        description: `${item.type} record for ${item.animal_name}`,
+        time: new Date(item.date).toLocaleString(),
+        type: 'info' as const,
+      })),
+      ...tasksData.map(item => ({
+        id: `task-${item.id}`,
+        title: `New Task Created`,
+        description: `${item.title} (${item.priority} priority)`,
+        time: new Date(item.due_date).toLocaleString(),
+        type: item.priority === 'high' ? 'alert' as const : 'info' as const,
+      })),
+      ...financialData.map(item => ({
+        id: `finance-${item.id}`,
+        title: `Financial Transaction`,
+        description: `${item.description}: $${item.amount}`,
+        time: new Date(item.date).toLocaleString(),
+        type: 'update' as const,
+      })),
+    ];
+    
+    // Sort by most recent first and limit to requested amount
+    return formattedActivities
+      .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+      .slice(0, limit);
+  } catch (error) {
+    console.error('Error fetching recent activities:', error);
+    throw error;
+  }
 };

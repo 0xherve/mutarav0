@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import LivestockGrid from "./LivestockGrid";
@@ -8,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileText, DownloadCloud, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchLivestock, deleteLivestock } from "@/lib/supabase";
 
 // Health status type
 type HealthStatus = "healthy" | "attention" | "sick";
@@ -70,40 +70,32 @@ const LivestockView = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const { toast } = useToast();
   
-  // Fetch livestock data from Supabase
-  const fetchLivestock = async () => {
+  // Fetch livestock data from Supabase using the utility function
+  const loadLivestock = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('livestock')
-        .select('*');
+      const data = await fetchLivestock();
       
-      if (error) {
-        throw error;
-      }
-      
-      if (data) {
-        // Validate and transform the health_status to ensure it matches our HealthStatus type
-        const validatedData: Livestock[] = data.map((item: LivestockFromDB) => {
-          // Ensure health_status is one of the allowed values
-          let health_status: HealthStatus = "healthy"; // Default
-          
-          if (item.health_status === "healthy" || 
-              item.health_status === "attention" || 
-              item.health_status === "sick") {
-            health_status = item.health_status as HealthStatus;
-          } else {
-            console.warn(`Invalid health_status value "${item.health_status}" for livestock ${item.id}, defaulting to "healthy"`);
-          }
-          
-          return {
-            ...item,
-            health_status
-          };
-        });
+      // Validate and transform the health_status to ensure it matches our HealthStatus type
+      const validatedData: Livestock[] = data.map((item: LivestockFromDB) => {
+        // Ensure health_status is one of the allowed values
+        let health_status: HealthStatus = "healthy"; // Default
         
-        setLivestock(validatedData);
-      }
+        if (item.health_status === "healthy" || 
+            item.health_status === "attention" || 
+            item.health_status === "sick") {
+          health_status = item.health_status as HealthStatus;
+        } else {
+          console.warn(`Invalid health_status value "${item.health_status}" for livestock ${item.id}, defaulting to "healthy"`);
+        }
+        
+        return {
+          ...item,
+          health_status
+        };
+      });
+      
+      setLivestock(validatedData);
     } catch (error) {
       console.error('Error fetching livestock:', error);
       toast({
@@ -120,7 +112,7 @@ const LivestockView = () => {
   
   // Load data on component mount
   useEffect(() => {
-    fetchLivestock();
+    loadLivestock();
   }, []);
   
   // Convert database format to component format
@@ -173,15 +165,8 @@ const LivestockView = () => {
   
   const handleDelete = async (id: string) => {
     try {
-      // Delete from Supabase
-      const { error } = await supabase
-        .from('livestock')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        throw error;
-      }
+      // Use the utility function to delete from Supabase
+      await deleteLivestock(id);
       
       // Update UI state
       setLivestock(livestock.filter(item => item.id !== id));

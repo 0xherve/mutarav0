@@ -1,9 +1,9 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CalendarIcon, Check, X } from "lucide-react";
+import { CalendarIcon, Check, X, User, Users } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -41,10 +41,12 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
-import { addTask, updateTask } from "@/lib/supabase";
+import { addTask, updateTask, fetchLivestock } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
+import { supabase } from "@/integrations/supabase/client";
 
 type Task = Database['public']['Tables']['tasks']['Row'];
+type Livestock = Database['public']['Tables']['livestock']['Row'];
 
 const taskFormSchema = z.object({
   title: z.string().min(3, {
@@ -61,6 +63,7 @@ const taskFormSchema = z.object({
     message: "Please select a priority.",
   }),
   assignee: z.string().optional(),
+  animal_id: z.string().optional(),
 });
 
 export type TaskFormValues = z.infer<typeof taskFormSchema>;
@@ -81,6 +84,14 @@ export function TaskFormModal({
   isEditing = false,
 }: TaskFormModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [livestock, setLivestock] = useState<Livestock[]>([]);
+  const [farmWorkers, setFarmWorkers] = useState<string[]>([
+    "John Doe", 
+    "Jane Smith", 
+    "Robert Johnson", 
+    "Maria Garcia", 
+    "Ahmed Hassan"
+  ]);
   
   // Format the due_date from string to Date if it exists and cast category/priority to allowed types
   const formattedDefaultValues = defaultValues ? {
@@ -98,8 +109,25 @@ export function TaskFormModal({
       category: "general",
       priority: "medium",
       assignee: "",
+      animal_id: "",
     },
   });
+
+  // Fetch livestock data for task assignment
+  useEffect(() => {
+    const loadLivestock = async () => {
+      try {
+        const data = await fetchLivestock();
+        setLivestock(data);
+      } catch (error) {
+        console.error("Error fetching livestock:", error);
+      }
+    };
+    
+    if (isOpen) {
+      loadLivestock();
+    }
+  }, [isOpen]);
 
   const onSubmit = async (data: TaskFormValues) => {
     try {
@@ -284,14 +312,26 @@ export function TaskFormModal({
                 name="assignee"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assignee</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Enter name or email (optional)" 
-                        {...field} 
-                        value={field.value || ""}
-                      />
-                    </FormControl>
+                    <FormLabel className="flex items-center">
+                      <User className="h-4 w-4 mr-2" />
+                      Assignee
+                    </FormLabel>
+                    <Select 
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select person" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None</SelectItem>
+                        {farmWorkers.map(worker => (
+                          <SelectItem key={worker} value={worker}>{worker}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormDescription>
                       Person responsible for this task
                     </FormDescription>
@@ -300,6 +340,44 @@ export function TaskFormModal({
                 )}
               />
             </div>
+            
+            {/* Conditional field for animal selection, shown only for certain task categories */}
+            {(form.watch("category") === "health" || form.watch("category") === "breeding") && (
+              <FormField
+                control={form.control}
+                name="animal_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center">
+                      <Users className="h-4 w-4 mr-2" />
+                      Related Animal
+                    </FormLabel>
+                    <Select 
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select animal" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="max-h-[200px]">
+                        <SelectItem value="">None</SelectItem>
+                        {livestock.map(animal => (
+                          <SelectItem key={animal.id} value={animal.id}>
+                            {animal.name} ({animal.breed})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Animal related to this task (for health or breeding tasks)
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             
             <DialogFooter>
               <Button 
