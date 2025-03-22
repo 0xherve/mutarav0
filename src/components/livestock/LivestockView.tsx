@@ -9,7 +9,28 @@ import { FileText, DownloadCloud, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
-// Livestock type based on the database schema
+// Health status type
+type HealthStatus = "healthy" | "attention" | "sick";
+
+// Database response type
+type LivestockFromDB = {
+  id: string;
+  name: string;
+  breed: string;
+  gender: string;
+  age: string | null;
+  weight: string | null;
+  health_status: string; // Changed from enum to string since DB might return any string
+  image_url: string | null;
+  birth_date: string | null;
+  purchase_date: string | null;
+  purchase_price: string | null;
+  notes: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+// Livestock type after validation/transformation
 type Livestock = {
   id: string;
   name: string;
@@ -17,7 +38,7 @@ type Livestock = {
   gender: string;
   age: string | null;
   weight: string | null;
-  health_status: "healthy" | "attention" | "sick";
+  health_status: HealthStatus; // This is the validated enum type
   image_url: string | null;
   birth_date: string | null;
   purchase_date: string | null;
@@ -33,8 +54,8 @@ type LivestockComponentData = {
   gender: string;
   age: string;
   weight: string;
-  healthStatus: "healthy" | "attention" | "sick";
-  imageUrl?: string;
+  healthStatus: HealthStatus;
+  imageUrl: string; // Changed to required with default value in mapping
   purchaseDate?: string;
   purchasePrice?: string;
   birthDate?: string;
@@ -62,7 +83,26 @@ const LivestockView = () => {
       }
       
       if (data) {
-        setLivestock(data);
+        // Validate and transform the health_status to ensure it matches our HealthStatus type
+        const validatedData: Livestock[] = data.map((item: LivestockFromDB) => {
+          // Ensure health_status is one of the allowed values
+          let health_status: HealthStatus = "healthy"; // Default
+          
+          if (item.health_status === "healthy" || 
+              item.health_status === "attention" || 
+              item.health_status === "sick") {
+            health_status = item.health_status as HealthStatus;
+          } else {
+            console.warn(`Invalid health_status value "${item.health_status}" for livestock ${item.id}, defaulting to "healthy"`);
+          }
+          
+          return {
+            ...item,
+            health_status
+          };
+        });
+        
+        setLivestock(validatedData);
       }
     } catch (error) {
       console.error('Error fetching livestock:', error);
@@ -93,7 +133,7 @@ const LivestockView = () => {
       age: animal.age || 'Unknown',
       weight: animal.weight || 'Unknown',
       healthStatus: animal.health_status,
-      imageUrl: animal.image_url || undefined,
+      imageUrl: animal.image_url || 'https://images.unsplash.com/photo-1596733430284-f7437764b1a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', // Default image
       purchaseDate: animal.purchase_date || undefined,
       purchasePrice: animal.purchase_price || undefined,
       birthDate: animal.birth_date || undefined,
@@ -112,7 +152,7 @@ const LivestockView = () => {
         age: selected.age || 'Unknown',
         weight: selected.weight || 'Unknown',
         healthStatus: selected.health_status,
-        imageUrl: selected.image_url || undefined,
+        imageUrl: selected.image_url || 'https://images.unsplash.com/photo-1596733430284-f7437764b1a9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80', // Default image
         purchaseDate: selected.purchase_date || undefined,
         purchasePrice: selected.purchase_price || undefined,
         birthDate: selected.birth_date || undefined,
