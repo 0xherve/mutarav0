@@ -43,7 +43,7 @@ import { cn } from "@/lib/utils";
 import type { Database } from "@/integrations/supabase/types";
 import { addTask, updateTask, fetchLivestock } from "@/lib/supabase";
 import { v4 as uuidv4 } from "uuid";
-import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 type Livestock = Database['public']['Tables']['livestock']['Row'];
@@ -92,6 +92,7 @@ export function TaskFormModal({
     "Maria Garcia", 
     "Ahmed Hassan"
   ]);
+  const { toast } = useToast();
   
   // Format the due_date from string to Date if it exists and cast category/priority to allowed types
   const formattedDefaultValues = defaultValues ? {
@@ -121,13 +122,18 @@ export function TaskFormModal({
         setLivestock(data);
       } catch (error) {
         console.error("Error fetching livestock:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load livestock data",
+          variant: "destructive"
+        });
       }
     };
     
     if (isOpen) {
       loadLivestock();
     }
-  }, [isOpen]);
+  }, [isOpen, toast]);
 
   const onSubmit = async (data: TaskFormValues) => {
     try {
@@ -153,6 +159,7 @@ export function TaskFormModal({
           due_date: formattedDate,
           completed: false,
           assignee: data.assignee || null,
+          animal_id: data.animal_id || null,
         });
       }
       
@@ -161,6 +168,11 @@ export function TaskFormModal({
       onClose();
     } catch (error) {
       console.error("Failed to save task:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save task. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsSubmitting(false);
     }
