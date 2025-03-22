@@ -18,6 +18,7 @@ interface Activity {
 interface RecentActivityProps {
   className?: string;
   limit?: number;
+  activities?: Activity[]; // Add support for directly passing activities
 }
 
 const typeColors = {
@@ -42,12 +43,19 @@ const item = {
   show: { opacity: 1, y: 0 }
 };
 
-const RecentActivity = ({ className, limit = 5 }: RecentActivityProps) => {
+const RecentActivity = ({ className, limit = 5, activities: propActivities }: RecentActivityProps) => {
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!propActivities);
   const { toast } = useToast();
 
   useEffect(() => {
+    // If activities are provided as props, use those instead of fetching
+    if (propActivities) {
+      setActivities(propActivities);
+      setIsLoading(false);
+      return;
+    }
+
     const loadActivities = async () => {
       try {
         setIsLoading(true);
@@ -66,7 +74,7 @@ const RecentActivity = ({ className, limit = 5 }: RecentActivityProps) => {
     };
 
     loadActivities();
-  }, [limit, toast]);
+  }, [limit, toast, propActivities]);
 
   return (
     <CustomCard className={cn("overflow-hidden", className)}>
