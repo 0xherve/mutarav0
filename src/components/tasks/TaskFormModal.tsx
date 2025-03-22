@@ -144,8 +144,13 @@ export function TaskFormModal({
       
       if (isEditing && defaultValues?.id) {
         await updateTask(defaultValues.id, {
-          ...data,
+          title: data.title,
+          description: data.description || "",
+          category: data.category,
+          priority: data.priority,
           due_date: formattedDate,
+          assignee: data.assignee || null,
+          animal_id: data.animal_id || null,
         });
       } else {
         // Generate a new ID for the task if it's a new task

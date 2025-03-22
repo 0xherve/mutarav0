@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -164,15 +165,28 @@ export const toggleTaskCompletion = async (id: string, completed: boolean) => {
   return data[0];
 };
 
-export const addTask = async (task: Database['public']['Tables']['tasks']['Insert']) => {
+export const addTask = async (task: any) => {
   // Validate that required fields are provided
   if (!task.id || !task.title || !task.category || !task.priority || !task.due_date) {
     throw new Error('Missing required task fields');
   }
   
+  // Create a task object with only the fields that exist in the database
+  const taskToInsert = {
+    id: task.id,
+    title: task.title,
+    description: task.description,
+    category: task.category,
+    due_date: task.due_date,
+    completed: task.completed ?? false,
+    priority: task.priority,
+    assignee: task.assignee || null,
+    animal_id: task.animal_id || null
+  };
+  
   const { data, error } = await supabase
     .from(TABLES.TASKS)
-    .insert([task])
+    .insert([taskToInsert])
     .select();
   
   if (error) {
@@ -182,10 +196,29 @@ export const addTask = async (task: Database['public']['Tables']['tasks']['Inser
   return data[0];
 };
 
-export const updateTask = async (id: string, updates: Partial<Database['public']['Tables']['tasks']['Update']>) => {
+export const updateTask = async (id: string, updates: any) => {
+  // Create an updates object with only valid fields
+  const validUpdates = {
+    title: updates.title,
+    description: updates.description,
+    category: updates.category,
+    due_date: updates.due_date,
+    priority: updates.priority,
+    assignee: updates.assignee,
+    animal_id: updates.animal_id,
+    completed: updates.completed
+  };
+  
+  // Remove undefined fields
+  Object.keys(validUpdates).forEach(key => {
+    if (validUpdates[key as keyof typeof validUpdates] === undefined) {
+      delete validUpdates[key as keyof typeof validUpdates];
+    }
+  });
+  
   const { data, error } = await supabase
     .from(TABLES.TASKS)
-    .update(updates)
+    .update(validUpdates)
     .eq('id', id)
     .select();
   

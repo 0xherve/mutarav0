@@ -226,6 +226,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          animal_id: string | null
           assignee: string | null
           category: string
           completed: boolean
@@ -238,6 +239,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          animal_id?: string | null
           assignee?: string | null
           category: string
           completed?: boolean
@@ -250,6 +252,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          animal_id?: string | null
           assignee?: string | null
           category?: string
           completed?: boolean
