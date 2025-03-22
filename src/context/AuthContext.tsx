@@ -7,8 +7,14 @@ import { useToast } from '@/hooks/use-toast';
 type AuthContextType = {
   session: Session | null;
   user: User | null;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{
+    user: User | null;
+    session: Session | null;
+  } | undefined>;
+  signUp: (email: string, password: string) => Promise<{
+    user: User | null;
+    session: Session | null;
+  } | undefined>;
   signOut: () => Promise<void>;
   loading: boolean;
 };
@@ -73,7 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return data;
     } catch (error) {
       console.error('Error signing in:', error);
-      throw error;
+      return undefined;
     } finally {
       setLoading(false);
     }
@@ -101,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return data;
     } catch (error) {
       console.error('Error signing up:', error);
-      throw error;
+      return undefined;
     } finally {
       setLoading(false);
     }
@@ -127,7 +133,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
     } catch (error) {
       console.error('Error signing out:', error);
-      throw error;
     } finally {
       setLoading(false);
     }

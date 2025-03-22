@@ -25,11 +25,27 @@ type Livestock = {
   notes: string | null;
 };
 
+// Type for the components that expect different property names
+type LivestockComponentData = {
+  id: string;
+  name: string;
+  breed: string;
+  gender: string;
+  age: string;
+  weight: string;
+  healthStatus: "healthy" | "attention" | "sick";
+  imageUrl?: string;
+  purchaseDate?: string;
+  purchasePrice?: string;
+  birthDate?: string;
+  notes?: string;
+};
+
 const LivestockView = () => {
   const [livestock, setLivestock] = useState<Livestock[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<"grid" | "table">("grid");
-  const [selectedLivestock, setSelectedLivestock] = useState<Livestock | null>(null);
+  const [selectedLivestock, setSelectedLivestock] = useState<LivestockComponentData | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const { toast } = useToast();
   
@@ -46,13 +62,7 @@ const LivestockView = () => {
       }
       
       if (data) {
-        // Convert database format to component format if needed
-        const formattedData: Livestock[] = data.map(item => ({
-          ...item,
-          health_status: item.health_status as "healthy" | "attention" | "sick",
-        }));
-        
-        setLivestock(formattedData);
+        setLivestock(data);
       }
     } catch (error) {
       console.error('Error fetching livestock:', error);
@@ -73,10 +83,42 @@ const LivestockView = () => {
     fetchLivestock();
   }, []);
   
+  // Convert database format to component format
+  const mapToComponentFormat = (animals: Livestock[]): LivestockComponentData[] => {
+    return animals.map(animal => ({
+      id: animal.id,
+      name: animal.name,
+      breed: animal.breed,
+      gender: animal.gender,
+      age: animal.age || 'Unknown',
+      weight: animal.weight || 'Unknown',
+      healthStatus: animal.health_status,
+      imageUrl: animal.image_url || undefined,
+      purchaseDate: animal.purchase_date || undefined,
+      purchasePrice: animal.purchase_price || undefined,
+      birthDate: animal.birth_date || undefined,
+      notes: animal.notes || undefined,
+    }));
+  };
+  
   const handleView = (id: string) => {
     const selected = livestock.find(item => item.id === id);
     if (selected) {
-      setSelectedLivestock(selected);
+      const formattedData: LivestockComponentData = {
+        id: selected.id,
+        name: selected.name,
+        breed: selected.breed,
+        gender: selected.gender,
+        age: selected.age || 'Unknown',
+        weight: selected.weight || 'Unknown',
+        healthStatus: selected.health_status,
+        imageUrl: selected.image_url || undefined,
+        purchaseDate: selected.purchase_date || undefined,
+        purchasePrice: selected.purchase_price || undefined,
+        birthDate: selected.birth_date || undefined,
+        notes: selected.notes || undefined,
+      };
+      setSelectedLivestock(formattedData);
       setIsDetailModalOpen(true);
     }
   };
@@ -162,6 +204,8 @@ const LivestockView = () => {
     return <div className="flex items-center justify-center h-64">Loading livestock data...</div>;
   }
 
+  const formattedLivestock = mapToComponentFormat(livestock);
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -195,14 +239,14 @@ const LivestockView = () => {
         </div>
       ) : view === "grid" ? (
         <LivestockGrid 
-          data={livestock}
+          data={formattedLivestock}
           onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
       ) : (
         <LivestockTable 
-          data={livestock}
+          data={formattedLivestock}
           onView={handleView}
           onEdit={handleEdit}
           onDelete={handleDelete}

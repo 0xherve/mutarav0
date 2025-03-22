@@ -31,12 +31,14 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      await signIn(email, password);
-      toast({
-        title: 'Login Successful',
-        description: 'You have been logged in successfully.',
-      });
-      navigate('/');
+      const result = await signIn(email, password);
+      if (result?.session) {
+        toast({
+          title: 'Login Successful',
+          description: 'You have been logged in successfully.',
+        });
+        navigate('/');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       toast({
