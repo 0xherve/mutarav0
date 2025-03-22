@@ -37,14 +37,32 @@ const Register = () => {
       });
       return;
     }
+
+    if (password.length < 6) {
+      toast({
+        title: 'Validation Error',
+        description: 'Password must be at least 6 characters long.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
     setIsLoading(true);
     
     try {
       await signUp(email, password);
+      toast({
+        title: 'Registration Successful',
+        description: 'Please check your email for a confirmation link to complete the sign-up process.',
+      });
       navigate('/login');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
+      toast({
+        title: 'Registration Failed',
+        description: error.message || 'An error occurred during registration.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }

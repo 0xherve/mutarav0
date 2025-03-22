@@ -32,9 +32,18 @@ const Login = () => {
     
     try {
       await signIn(email, password);
+      toast({
+        title: 'Login Successful',
+        description: 'You have been logged in successfully.',
+      });
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      toast({
+        title: 'Login Failed',
+        description: error.message || 'An error occurred during login.',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
