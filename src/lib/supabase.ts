@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -62,20 +61,27 @@ export const fetchFeedInventory = async () => {
 };
 
 export const fetchTasks = async (dateFilter?: Date) => {
-  let query = supabase.from(TABLES.TASKS).select('*');
-  
-  if (dateFilter) {
-    const formattedDate = dateFilter.toISOString().split('T')[0];
-    query = query.eq('due_date', formattedDate);
-  }
-  
-  const { data, error } = await query;
-  
-  if (error) {
-    console.error('Error fetching tasks:', error);
+  try {
+    let query = supabase.from(TABLES.TASKS).select('*');
+    
+    if (dateFilter) {
+      const formattedDate = dateFilter.toISOString().split('T')[0];
+      query = query.eq('due_date', formattedDate);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching tasks:', error);
+      throw error;
+    }
+    
+    console.log('Tasks fetched successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Exception fetching tasks:', error);
     throw error;
   }
-  return data;
 };
 
 export const fetchFinancialTransactions = async () => {
@@ -152,94 +158,125 @@ export const deleteLivestock = async (id: string) => {
 
 // Task functions
 export const toggleTaskCompletion = async (id: string, completed: boolean) => {
-  const { data, error } = await supabase
-    .from(TABLES.TASKS)
-    .update({ completed })
-    .eq('id', id)
-    .select();
-  
-  if (error) {
-    console.error('Error toggling task completion:', error);
+  try {
+    console.log(`Toggling task ${id} completion to ${completed}`);
+    const { data, error } = await supabase
+      .from(TABLES.TASKS)
+      .update({ completed })
+      .eq('id', id)
+      .select();
+    
+    if (error) {
+      console.error('Error toggling task completion:', error);
+      throw error;
+    }
+    console.log('Task toggled successfully:', data);
+    return data[0];
+  } catch (error) {
+    console.error('Exception toggling task completion:', error);
     throw error;
   }
-  return data[0];
 };
 
 export const addTask = async (task: any) => {
-  // Validate that required fields are provided
-  if (!task.id || !task.title || !task.category || !task.priority || !task.due_date) {
-    throw new Error('Missing required task fields');
-  }
-  
-  // Create a task object with only the fields that exist in the database
-  const taskToInsert = {
-    id: task.id,
-    title: task.title,
-    description: task.description,
-    category: task.category,
-    due_date: task.due_date,
-    completed: task.completed ?? false,
-    priority: task.priority,
-    assignee: task.assignee || null,
-    animal_id: task.animal_id || null
-  };
-  
-  const { data, error } = await supabase
-    .from(TABLES.TASKS)
-    .insert([taskToInsert])
-    .select();
-  
-  if (error) {
-    console.error('Error adding task:', error);
+  try {
+    console.log('Adding task:', task);
+    // Validate that required fields are provided
+    if (!task.id || !task.title || !task.category || !task.priority || !task.due_date) {
+      console.error('Missing required task fields:', task);
+      throw new Error('Missing required task fields');
+    }
+    
+    // Create a task object with only the fields that exist in the database
+    const taskToInsert = {
+      id: task.id,
+      title: task.title,
+      description: task.description ?? "",
+      category: task.category,
+      due_date: task.due_date,
+      completed: task.completed ?? false,
+      priority: task.priority,
+      assignee: task.assignee || null,
+      animal_id: task.animal_id || null
+    };
+    
+    console.log('Inserting task:', taskToInsert);
+    const { data, error } = await supabase
+      .from(TABLES.TASKS)
+      .insert([taskToInsert])
+      .select();
+    
+    if (error) {
+      console.error('Error adding task:', error);
+      throw error;
+    }
+    console.log('Task added successfully:', data);
+    return data[0];
+  } catch (error) {
+    console.error('Exception adding task:', error);
     throw error;
   }
-  return data[0];
 };
 
 export const updateTask = async (id: string, updates: any) => {
-  // Create an updates object with only valid fields
-  const validUpdates = {
-    title: updates.title,
-    description: updates.description,
-    category: updates.category,
-    due_date: updates.due_date,
-    priority: updates.priority,
-    assignee: updates.assignee,
-    animal_id: updates.animal_id,
-    completed: updates.completed
-  };
-  
-  // Remove undefined fields
-  Object.keys(validUpdates).forEach(key => {
-    if (validUpdates[key as keyof typeof validUpdates] === undefined) {
-      delete validUpdates[key as keyof typeof validUpdates];
+  try {
+    console.log(`Updating task ${id} with:`, updates);
+    // Create an updates object with only valid fields
+    const validUpdates = {
+      title: updates.title,
+      description: updates.description ?? "",
+      category: updates.category,
+      due_date: updates.due_date,
+      priority: updates.priority,
+      assignee: updates.assignee ?? null,
+      animal_id: updates.animal_id ?? null,
+      completed: updates.completed
+    };
+    
+    // Remove undefined fields
+    Object.keys(validUpdates).forEach(key => {
+      if (validUpdates[key as keyof typeof validUpdates] === undefined) {
+        delete validUpdates[key as keyof typeof validUpdates];
+      }
+    });
+    
+    console.log('Valid updates:', validUpdates);
+    const { data, error } = await supabase
+      .from(TABLES.TASKS)
+      .update(validUpdates)
+      .eq('id', id)
+      .select();
+    
+    if (error) {
+      console.error('Error updating task:', error);
+      throw error;
     }
-  });
-  
-  const { data, error } = await supabase
-    .from(TABLES.TASKS)
-    .update(validUpdates)
-    .eq('id', id)
-    .select();
-  
-  if (error) {
-    console.error('Error updating task:', error);
+    console.log('Task updated successfully:', data);
+    return data[0];
+  } catch (error) {
+    console.error('Exception updating task:', error);
     throw error;
   }
-  return data[0];
 };
 
 export const deleteTask = async (id: string) => {
-  const { error } = await supabase
-    .from(TABLES.TASKS)
-    .delete()
-    .eq('id', id);
-  
-  if (error) {
-    console.error('Error deleting task:', error);
+  try {
+    console.log(`Deleting task ${id}`);
+    const { error } = await supabase
+      .from(TABLES.TASKS)
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('Error deleting task:', error);
+      throw error;
+    }
+    console.log('Task deleted successfully');
+    return true;
+  } catch (error) {
+    console.error('Exception deleting task:', error);
     throw error;
   }
-  return true;
 };
 
 // Financial transactions functions

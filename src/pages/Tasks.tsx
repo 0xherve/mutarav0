@@ -64,7 +64,7 @@ interface TaskCardProps {
 
 const TaskCard = ({ task, onToggleComplete, onDelete, onEdit }: TaskCardProps) => {
   const isPastDue = new Date(task.due_date) < new Date() && !task.completed;
-  const categoryInfo = taskCategories[task.category as keyof typeof taskCategories];
+  const categoryInfo = taskCategories[task.category as keyof typeof taskCategories] || taskCategories.general;
   
   return (
     <CustomCard 
@@ -169,8 +169,10 @@ const Tasks = () => {
 
   const loadTasks = async () => {
     try {
+      console.log("Loading tasks with date filter:", selectedDate);
       setIsLoading(true);
       const data = await fetchTasks(selectedDate);
+      console.log("Tasks loaded:", data);
       setTasks(data);
     } catch (error) {
       console.error("Error loading tasks:", error);
@@ -186,10 +188,11 @@ const Tasks = () => {
 
   useEffect(() => {
     loadTasks();
-  }, [selectedDate, toast]);
+  }, [selectedDate]);
   
   const handleToggleComplete = async (id: string, completed: boolean) => {
     try {
+      console.log(`Toggling task ${id} completion to ${completed}`);
       await toggleTaskCompletion(id, completed);
       setTasks(tasks.map(task => 
         task.id === id ? { ...task, completed } : task
@@ -211,6 +214,7 @@ const Tasks = () => {
   
   const handleDeleteTask = async (id: string) => {
     try {
+      console.log(`Deleting task ${id}`);
       await deleteTask(id);
       setTasks(tasks.filter(task => task.id !== id));
       
@@ -229,6 +233,7 @@ const Tasks = () => {
   };
 
   const handleEditTask = (task: Task) => {
+    console.log("Editing task:", task);
     setEditingTask(task);
     setIsTaskFormOpen(true);
   };

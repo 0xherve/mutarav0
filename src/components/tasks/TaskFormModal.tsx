@@ -94,6 +94,8 @@ export function TaskFormModal({
   ]);
   const { toast } = useToast();
   
+  console.log("TaskFormModal opened with defaultValues:", defaultValues);
+  
   // Format the due_date from string to Date if it exists and cast category/priority to allowed types
   const formattedDefaultValues = defaultValues ? {
     ...defaultValues,
@@ -101,6 +103,8 @@ export function TaskFormModal({
     category: defaultValues.category as "feeding" | "health" | "breeding" | "general",
     priority: defaultValues.priority as "low" | "medium" | "high",
   } : undefined;
+
+  console.log("Formatted default values:", formattedDefaultValues);
 
   const form = useForm<TaskFormValues>({
     resolver: zodResolver(taskFormSchema),
@@ -118,7 +122,9 @@ export function TaskFormModal({
   useEffect(() => {
     const loadLivestock = async () => {
       try {
+        console.log("Fetching livestock data");
         const data = await fetchLivestock();
+        console.log("Livestock data fetched:", data);
         setLivestock(data);
       } catch (error) {
         console.error("Error fetching livestock:", error);
@@ -138,11 +144,14 @@ export function TaskFormModal({
   const onSubmit = async (data: TaskFormValues) => {
     try {
       setIsSubmitting(true);
+      console.log("Form submitted with data:", data);
       
       // Format the date to ISO string (date part only)
       const formattedDate = data.due_date.toISOString().split('T')[0];
+      console.log("Formatted date:", formattedDate);
       
       if (isEditing && defaultValues?.id) {
+        console.log(`Updating task ${defaultValues.id}`);
         await updateTask(defaultValues.id, {
           title: data.title,
           description: data.description || "",
@@ -152,11 +161,14 @@ export function TaskFormModal({
           assignee: data.assignee || null,
           animal_id: data.animal_id || null,
         });
+        console.log("Task updated successfully");
       } else {
         // Generate a new ID for the task if it's a new task
+        const taskId = uuidv4();
+        console.log(`Creating new task with ID ${taskId}`);
         // Ensure all required fields have values
         await addTask({
-          id: uuidv4(),
+          id: taskId,
           title: data.title,
           description: data.description || "",
           category: data.category,
@@ -166,11 +178,19 @@ export function TaskFormModal({
           assignee: data.assignee || null,
           animal_id: data.animal_id || null,
         });
+        console.log("Task created successfully");
       }
       
       form.reset();
       onSuccess();
       onClose();
+      
+      toast({
+        title: isEditing ? "Task Updated" : "Task Created",
+        description: isEditing 
+          ? "The task has been successfully updated." 
+          : "A new task has been successfully created.",
+      });
     } catch (error) {
       console.error("Failed to save task:", error);
       toast({
