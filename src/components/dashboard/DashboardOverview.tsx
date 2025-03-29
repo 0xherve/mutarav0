@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   BarChart3, 
   ClipboardList, 
@@ -15,60 +15,85 @@ import RecentActivity from "./RecentActivity";
 import PageHeader from "../common/PageHeader";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import CustomCard from "../ui/CustomCard";
-
-// Mock data
-const recentActivities = [
-  {
-    id: "1",
-    title: "New cattle added",
-    description: "Added 5 new Angus heifers to the herd",
-    time: "2h ago",
-    type: "add" as const
-  },
-  {
-    id: "2",
-    title: "Vaccination scheduled",
-    description: "10 cattle due for vaccination next week",
-    time: "3h ago",
-    type: "info" as const
-  },
-  {
-    id: "3",
-    title: "Health alert",
-    description: "Cow #1042 showing signs of illness",
-    time: "5h ago",
-    type: "alert" as const
-  },
-  {
-    id: "4",
-    title: "Breeding record updated",
-    description: "AI performed on 3 cows",
-    time: "1d ago",
-    type: "update" as const
-  }
-];
-
-const breedData = [
-  { name: "Angus", value: 35, color: "#3B82F6" },
-  { name: "Hereford", value: 25, color: "#10B981" },
-  { name: "Holstein", value: 20, color: "#6366F1" },
-  { name: "Jersey", value: 15, color: "#F59E0B" },
-  { name: "Other", value: 5, color: "#94A3B8" }
-];
-
-const tasksData = [
-  { name: "Pending", value: 12, color: "#F59E0B" },
-  { name: "Completed", value: 18, color: "#10B981" },
-];
+import { fetchTasks, fetchRecentActivities } from "@/lib/supabase";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const DashboardOverview = () => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  // Fetch tasks for the dashboard
+  const { data: tasks = [], isLoading: isTasksLoading } = useQuery({
+    queryKey: ['dashboardTasks'],
+    queryFn: fetchTasks,
+    onError: (error) => {
+      console.error("Error fetching tasks:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load tasks. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Fetch recent activities
+  const { data: recentActivities = [], isLoading: isActivitiesLoading } = useQuery({
+    queryKey: ['recentActivities'],
+    queryFn: () => fetchRecentActivities(5),
+    onError: (error) => {
+      console.error("Error fetching recent activities:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load recent activities. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Calculate task statistics
+  const completedTasks = tasks.filter(task => task.completed).length;
+  const pendingTasks = tasks.filter(task => !task.completed).length;
+  
+  // Prepare data for task status chart
+  const tasksData = [
+    { name: "Pending", value: pendingTasks, color: "#F59E0B" },
+    { name: "Completed", value: completedTasks, color: "#10B981" },
+  ];
+  
+  // Prepare data for breed chart (this is still mock data as we don't have real livestock stats yet)
+  const breedData = [
+    { name: "Angus", value: 35, color: "#3B82F6" },
+    { name: "Hereford", value: 25, color: "#10B981" },
+    { name: "Holstein", value: 20, color: "#6366F1" },
+    { name: "Jersey", value: 15, color: "#F59E0B" },
+    { name: "Other", value: 5, color: "#94A3B8" }
+  ];
+  
+  // Navigate to add new livestock
+  const handleAddLivestock = () => {
+    navigate('/livestock');
+  };
+  
+  // Calculate due today and overdue tasks
+  const today = new Date().toISOString().split('T')[0];
+  const dueTodayTasks = tasks.filter(t => t.due_date === today && !t.completed).length;
+  const overdueTasks = tasks.filter(t => t.due_date < today && !t.completed).length;
+  
+  // Get next 3 upcoming tasks
+  const upcomingTasks = tasks
+    .filter(task => !task.completed)
+    .sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+    .slice(0, 3);
+
   return (
     <div className="p-6 bg-gray-50/30 min-h-[calc(100vh-4rem)] animate-fade-in">
       <PageHeader
         title="Farm Dashboard"
         description="Monitor your farm's performance and activities"
         action={
-          <Button size="sm" className="ml-auto">
+          <Button size="sm" className="ml-auto" onClick={handleAddLivestock}>
             <Plus className="mr-2 h-4 w-4" />
             Add Livestock
           </Button>
@@ -86,8 +111,8 @@ const DashboardOverview = () => {
         
         <MetricsCard
           title="Health Alerts"
-          value={3}
-          change={{ value: 1, isPositive: false }}
+          value={overdueTasks}
+          change={{ value: overdueTasks > 0 ? overdueTasks : 0, isPositive: false }}
           icon={Heart}
           color="secondary"
         />
@@ -136,71 +161,110 @@ const DashboardOverview = () => {
           
           <CustomCard className="p-6">
             <h3 className="font-semibold mb-4">Tasks Status</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={tasksData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {tasksData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            {isTasksLoading ? (
+              <div className="h-64 flex items-center justify-center">
+                <p className="text-muted-foreground">Loading tasks...</p>
+              </div>
+            ) : tasks.length === 0 ? (
+              <div className="h-64 flex items-center justify-center">
+                <p className="text-muted-foreground">No tasks found</p>
+              </div>
+            ) : (
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={tasksData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                    >
+                      {tasksData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </CustomCard>
           
           <CustomCard className="md:col-span-2 p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Upcoming Tasks</h3>
-              <Button variant="outline" size="sm">View All</Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/tasks')}>View All</Button>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 p-3 rounded-lg border bg-muted/50">
-                <div className="rounded-full p-2 bg-amber-100">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">Vaccination Due</h4>
-                  <p className="text-sm text-muted-foreground mt-1">10 cattle due for vaccination</p>
-                  <p className="text-xs text-muted-foreground mt-1">Due in 3 days</p>
-                </div>
+            {isTasksLoading ? (
+              <div className="p-4 text-center">
+                <p className="text-muted-foreground">Loading tasks...</p>
               </div>
-              
-              <div className="flex items-start gap-4 p-3 rounded-lg border bg-muted/50">
-                <div className="rounded-full p-2 bg-blue-100">
-                  <Heart className="h-4 w-4 text-blue-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">Health Check</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Routine health check for breeding stock</p>
-                  <p className="text-xs text-muted-foreground mt-1">Tomorrow</p>
-                </div>
+            ) : upcomingTasks.length === 0 ? (
+              <div className="p-4 text-center">
+                <p className="text-muted-foreground">No upcoming tasks</p>
               </div>
-              
-              <div className="flex items-start gap-4 p-3 rounded-lg border bg-muted/50">
-                <div className="rounded-full p-2 bg-green-100">
-                  <Wheat className="h-4 w-4 text-green-600" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm">Feed Delivery</h4>
-                  <p className="text-sm text-muted-foreground mt-1">Scheduled feed delivery</p>
-                  <p className="text-xs text-muted-foreground mt-1">Today</p>
-                </div>
+            ) : (
+              <div className="space-y-4">
+                {upcomingTasks.map(task => {
+                  // Determine icon and colors based on task category
+                  let icon = <AlertCircle className="h-4 w-4 text-amber-600" />;
+                  let bgColor = "bg-amber-100";
+                  let textColor = "text-amber-600";
+                  
+                  if (task.category === "feeding") {
+                    icon = <Wheat className="h-4 w-4 text-green-600" />;
+                    bgColor = "bg-green-100";
+                    textColor = "text-green-600";
+                  } else if (task.category === "health") {
+                    icon = <Heart className="h-4 w-4 text-blue-600" />;
+                    bgColor = "bg-blue-100";
+                    textColor = "text-blue-600";
+                  }
+                  
+                  // Calculate due date display
+                  const today = new Date().toISOString().split('T')[0];
+                  let dueDisplay = "";
+                  
+                  if (task.due_date === today) {
+                    dueDisplay = "Today";
+                  } else if (task.due_date < today) {
+                    dueDisplay = "Overdue";
+                  } else {
+                    // Calculate days difference
+                    const dueDate = new Date(task.due_date);
+                    const currentDate = new Date();
+                    const diffTime = dueDate.getTime() - currentDate.getTime();
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    
+                    if (diffDays === 1) {
+                      dueDisplay = "Tomorrow";
+                    } else {
+                      dueDisplay = `In ${diffDays} days`;
+                    }
+                  }
+                  
+                  return (
+                    <div key={task.id} className="flex items-start gap-4 p-3 rounded-lg border bg-muted/50">
+                      <div className={`rounded-full p-2 ${bgColor}`}>
+                        {icon}
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-sm">{task.title}</h4>
+                        <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{dueDisplay}</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </CustomCard>
         </div>
         
-        <RecentActivity activities={recentActivities} className="h-full" />
+        <RecentActivity activities={recentActivities} className="h-full" isLoading={isActivitiesLoading} />
       </div>
     </div>
   );

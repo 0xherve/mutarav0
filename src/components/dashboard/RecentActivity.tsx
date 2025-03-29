@@ -1,13 +1,17 @@
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Circle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import CustomCard from "../ui/CustomCard";
-import { fetchRecentActivities } from "@/lib/supabase";
-import { useToast } from "@/hooks/use-toast";
+import { 
+  ArrowUpRight, 
+  Plus, 
+  AlertCircle, 
+  Info, 
+  ArrowRight,
+  Loader2
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface Activity {
+export interface ActivityItem {
   id: string;
   title: string;
   description: string;
@@ -16,121 +20,77 @@ interface Activity {
 }
 
 interface RecentActivityProps {
+  activities: ActivityItem[];
   className?: string;
-  limit?: number;
-  activities?: Activity[]; // Add support for directly passing activities
+  isLoading?: boolean;
 }
 
-const typeColors = {
-  add: "text-green-500",
-  update: "text-blue-500",
-  alert: "text-red-500",
-  info: "text-orange-500"
-};
-
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1
+const RecentActivity = ({ activities, className, isLoading = false }: RecentActivityProps) => {
+  // Helper function to get the right icon based on activity type
+  const getActivityIcon = (type: ActivityItem["type"]) => {
+    switch (type) {
+      case "add":
+        return <Plus className="h-3 w-3" />;
+      case "alert":
+        return <AlertCircle className="h-3 w-3" />;
+      case "info":
+        return <Info className="h-3 w-3" />;
+      case "update":
+        return <ArrowUpRight className="h-3 w-3" />;
     }
-  }
-};
-
-const item = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0 }
-};
-
-const RecentActivity = ({ className, limit = 5, activities: propActivities }: RecentActivityProps) => {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [isLoading, setIsLoading] = useState(!propActivities);
-  const { toast } = useToast();
-
-  useEffect(() => {
-    // If activities are provided as props, use those instead of fetching
-    if (propActivities) {
-      setActivities(propActivities);
-      setIsLoading(false);
-      return;
+  };
+  
+  // Helper function to get the background color based on activity type
+  const getActivityBg = (type: ActivityItem["type"]) => {
+    switch (type) {
+      case "add":
+        return "bg-green-500/10 text-green-600 border-green-500/20";
+      case "alert":
+        return "bg-red-500/10 text-red-600 border-red-500/20";
+      case "info":
+        return "bg-blue-500/10 text-blue-600 border-blue-500/20";
+      case "update":
+        return "bg-amber-500/10 text-amber-600 border-amber-500/20";
     }
-
-    const loadActivities = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchRecentActivities(limit);
-        setActivities(data);
-      } catch (error) {
-        console.error("Failed to load recent activities:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load recent activities.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadActivities();
-  }, [limit, toast, propActivities]);
+  };
 
   return (
-    <CustomCard className={cn("overflow-hidden", className)}>
-      <div className="px-6 py-5 border-b">
+    <CustomCard className={cn("p-6", className)}>
+      <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold">Recent Activity</h3>
+        <Button variant="ghost" size="sm" className="gap-1">
+          View All
+          <ArrowRight className="h-3 w-3" />
+        </Button>
       </div>
       
-      <div className="p-0">
-        {isLoading ? (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">Loading recent activities...</p>
-          </div>
-        ) : activities.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">No recent activities found</p>
-          </div>
-        ) : (
-          <motion.ul 
-            className="divide-y"
-            variants={container}
-            initial="hidden"
-            animate="show"
-          >
-            {activities.map((activity) => (
-              <motion.li 
-                key={activity.id}
-                className="px-6 py-4 flex items-start gap-4"
-                variants={item}
-              >
-                <div className="flex-shrink-0 mt-1">
-                  <Circle 
-                    className={cn(
-                      "h-2 w-4 fill-current", 
-                      typeColors[activity.type]
-                    )} 
-                  />
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : activities.length === 0 ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">No recent activities</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {activities.map((activity) => (
+            <div key={activity.id} className="relative">
+              <div className="flex items-start gap-4">
+                <div className={cn("rounded-full p-1.5 border", getActivityBg(activity.type))}>
+                  {getActivityIcon(activity.type)}
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between">
-                    <p className="text-sm font-medium">
-                      {activity.title}
-                    </p>
-                    <span className="text-xs text-muted-foreground">
-                      {activity.time}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {activity.description}
-                  </p>
+                <div>
+                  <h4 className="text-sm font-medium">{activity.title}</h4>
+                  <p className="text-xs text-muted-foreground mt-1">{activity.description}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{activity.time}</p>
                 </div>
-              </motion.li>
-            ))}
-          </motion.ul>
-        )}
-      </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </CustomCard>
   );
 };
