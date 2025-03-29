@@ -24,31 +24,35 @@ const DashboardOverview = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Fetch tasks for the dashboard
+  // Fetch tasks for the dashboard - fixing the query function
   const { data: tasks = [], isLoading: isTasksLoading } = useQuery({
     queryKey: ['dashboardTasks'],
-    queryFn: fetchTasks,
-    onError: (error) => {
-      console.error("Error fetching tasks:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load tasks. Please try again.",
-        variant: "destructive",
-      });
+    queryFn: async () => fetchTasks(),
+    meta: {
+      onError: (error: any) => {
+        console.error("Error fetching tasks:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load tasks. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   });
   
-  // Fetch recent activities
+  // Fetch recent activities - fixing the query function and error handler
   const { data: recentActivities = [], isLoading: isActivitiesLoading } = useQuery({
     queryKey: ['recentActivities'],
-    queryFn: () => fetchRecentActivities(5),
-    onError: (error) => {
-      console.error("Error fetching recent activities:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load recent activities. Please try again.",
-        variant: "destructive",
-      });
+    queryFn: async () => fetchRecentActivities(5),
+    meta: {
+      onError: (error: any) => {
+        console.error("Error fetching recent activities:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load recent activities. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   });
   
